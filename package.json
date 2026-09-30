@@ -1,0 +1,14 @@
+﻿{
+  "name": "pastrycost-ai",
+  "version": "1.0.0",
+  "description": "Agentic risk evaluation and dynamic margin pricing for boutique pastries",
+  "main": "src/pastry-agent.js",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  }
+}
