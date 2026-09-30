@@ -1,132 +1,74 @@
-﻿/**
- * PastryCost AI - Core Sequential Multi-Agent Pipeline
- */
-
-export class PastryCostEngine {
-  constructor(apiKey, mockClient = null) {
-    this.apiKey = apiKey;
-    this.mockClient = mockClient;
-  }
-
-  /**
-   * Stage 1: Structural & Environmental Vulnerability Assessment
-   */
-  async assessPhysicalRisk(spec) {
-    if (this.mockClient) {
-      return this.mockClient.assessPhysicalRisk(spec);
+﻿export class PastryCostEngine {
+    constructor(apiKey, mockClient = null) {
+        this.apiKey = apiKey;
+        this.mockClient = mockClient;
     }
 
-    const prompt = `Analyze pastry structural and thermal vulnerabilities.
-Item: ${spec.itemType}
-Environment: ${spec.environment} (Outdoor/Transit)
-Return strictly valid JSON:
-{
-  "vulnerability_level": "low" | "medium" | "high" | "critical",
-  "risk_multiplier": <number between 1.0 and 1.4>,
-  "mitigation_steps": ["step1", "step2"],
-  "wastage_factor": <number between 0.05 and 0.25>
-}`;
+    async _callLLM(systemPrompt, userPrompt) {
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${this.apiKey}`,
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://pastrycostai.netlify.app",
+                "X-Title": "PastryCost AI"
+            },
+            body: JSON.stringify({
+                model: "meta-llama/llama-3.3-70b-instruct:free",
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: userPrompt }
+                ],
+                response_format: { type: "json_object" }
+            })
+        });
 
-    return await this._callLLM(prompt);
-  }
+        const data = await response.json();
 
-  /**
-   * Stage 2: Financial Margins & Labor Pricing Model
-   */
-  calculateFinancials(spec, riskAssessment) {
-    const rawMaterialCost = Number(spec.ingredientCost) || 0;
-    const prepHours = Number(spec.prepHours) || 0;
-    const salesHours = Number(spec.salesHours) || 0;
-    const hourlyRate = Number(spec.hourlyRate) || 80;
+        // 1. תפיסת שגיאות מה-API (כמו מודל לא זמין או הרשאה חסרה)
+        if (data.error) {
+            throw new Error(`OpenRouter API Error: ${data.error.message || JSON.stringify(data.error)}`);
+        }
 
-    // Apply wastage factor from Stage 1 risk assessment
-    const effectiveMaterialCost = rawMaterialCost * (1 + riskAssessment.wastage_factor);
+        // 2. תפיסת מצב של פלט ריק
+        if (!data.choices || !data.choices[0]) {
+            throw new Error(`Unexpected Response from LLM: ${JSON.stringify(data)}`);
+        }
 
-    // Differentiate kitchen craft labor vs. operational booth sales labor
-    const kitchenLaborCost = prepHours * hourlyRate;
-    const boothLaborCost = salesHours * (hourlyRate * 0.75); // sales labor weighted at operational baseline
-    const totalLaborCost = kitchenLaborCost + boothLaborCost;
-
-    // Base cost before dynamic risk mitigation
-    const baseProductionCost = effectiveMaterialCost + totalLaborCost;
-
-    // Apply Stage 1 structural/thermal risk multiplier
-    const adjustedCost = baseProductionCost * riskAssessment.risk_multiplier;
-
-    // Minimum target net margin (35%)
-    const recommendedPrice = Math.round(adjustedCost * 1.35);
-    const projectedProfit = Math.round(recommendedPrice - adjustedCost);
-
-    return {
-      effectiveMaterialCost: Math.round(effectiveMaterialCost),
-      totalLaborCost: Math.round(totalLaborCost),
-      baseProductionCost: Math.round(baseProductionCost),
-      riskMultiplier: riskAssessment.risk_multiplier,
-      recommendedPrice,
-      projectedProfit
-    };
-  }
-
-  /**
-   * Stage 3: Operational Synthesis & Client Proposal Generation
-   */
-  async generateProposal(spec, riskAssessment, financials) {
-    if (this.mockClient) {
-      return this.mockClient.generateProposal(spec, riskAssessment, financials);
+        return data.choices[0].message.content;
     }
 
-    const prompt = `Generate a professional client quote and handling protocol for a boutique pastry order.
-Context:
-- Item: ${spec.itemType}
-- Environment: ${spec.environment}
-- Recommended Price: ₪${financials.recommendedPrice}
-- Identified Risks: ${riskAssessment.vulnerability_level}
-- Mitigations: ${riskAssessment.mitigation_steps.join(", ")}
+    async assessPhysicalRisk(spec) {
+        if (this.mockClient) return this.mockClient.assessPhysicalRisk(spec);
 
-Return strictly valid JSON:
-{
-  "client_quote": "<polite commercial quote in Hebrew explaining the scope>",
-  "logistics_protocol": "<handling, transport, and refrigeration instructions in Hebrew>",
-  "pricing_summary": {
-    "price": ${financials.recommendedPrice},
-    "prep_hours": ${spec.prepHours},
-    "sales_hours": ${spec.salesHours}
-  }
-}`;
+        const sys = `You are a pastry risk assessment AI. Respond ONLY in valid JSON: {"vulnerability_level": "low|medium|high", "risk_multiplier": number, "mitigation_steps": ["..."], "wastage_factor": number}. Risk multiplier should be 1.0 to 1.5 based on heat/transport.`;
+        const user = `Item: ${spec.itemType}\nEnvironment: ${spec.environment}`;
+        const result = await this._callLLM(sys, user);
+        return JSON.parse(result);
+    }
 
-    return await this._callLLM(prompt);
-  }
+    calculateFinancials(spec, risk) {
+        const effectiveMaterialCost = spec.ingredientCost * (1 + risk.wastage_factor);
+        const totalLaborCost = (spec.prepHours + spec.salesHours) * spec.hourlyRate;
+        const baseProductionCost = effectiveMaterialCost + totalLaborCost;
+        const adjustedCost = baseProductionCost * risk.risk_multiplier;
+        const recommendedPrice = Math.round(adjustedCost * 1.35); // 35% margin
+        return { recommendedPrice, projectedProfit: recommendedPrice - baseProductionCost, riskMultiplier: risk.risk_multiplier };
+    }
 
-  /**
-   * Full Pipeline Execution
-   */
-  async runPipeline(spec) {
-    const riskAssessment = await this.assessPhysicalRisk(spec);
-    const financials = this.calculateFinancials(spec, riskAssessment);
-    const proposal = await this.generateProposal(spec, riskAssessment, financials);
+    async generateProposal(spec, risk, financials) {
+        if (this.mockClient) return this.mockClient.generateProposal(spec, risk, financials);
 
-    return {
-      riskAssessment,
-      financials,
-      proposal
-    };
-  }
+        const sys = `You are a boutique pastry AI. Respond ONLY in valid JSON: {"client_quote": "...", "logistics_protocol": "...", "pricing_summary": {"price": number, "prep_hours": number, "sales_hours": number}}. Write the quote and protocol in professional Hebrew.`;
+        const user = `Item: ${spec.itemType}\nPrice: ${financials.recommendedPrice}\nMitigation: ${risk.mitigation_steps.join(", ")}`;
+        const result = await this._callLLM(sys, user);
+        return JSON.parse(result);
+    }
 
-  async _callLLM(prompt) {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${this.apiKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "anthropic/claude-3.5-haiku",
-        messages: [{ role: "user", content: prompt }],
-        response_format: { type: "json_object" }
-      })
-    });
-
-    const data = await response.json();
-    return JSON.parse(data.choices[0].message.content);
-  }
+    async runPipeline(spec) {
+        const risk = await this.assessPhysicalRisk(spec);
+        const financials = this.calculateFinancials(spec, risk);
+        const proposal = await this.generateProposal(spec, risk, financials);
+        return { riskAssessment: risk, financials, proposal };
+    }
 }
