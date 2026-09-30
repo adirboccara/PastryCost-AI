@@ -1,4 +1,4 @@
-﻿export class PastryCostEngine {
+export class PastryCostEngine {
     constructor(apiKey, mockClient = null) {
         this.apiKey = apiKey;
         this.mockClient = mockClient;
@@ -14,7 +14,7 @@
                 "X-Title": "PastryCost AI"
             },
             body: JSON.stringify({
-                model: "meta-llama/llama-3.3-70b-instruct:free",
+                model: "google/gemini-2.5-flash-free",
                 messages: [
                     { role: "system", content: systemPrompt },
                     { role: "user", content: userPrompt }
