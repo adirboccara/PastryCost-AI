@@ -1,0 +1,89 @@
+﻿<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sweetie - PastryCost AI</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; background-color: #fafafa; color: #333; }
+        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        h1 { color: #d9777f; text-align: center; margin-bottom: 1.5rem; }
+        label { font-weight: bold; display: block; margin-top: 1rem; margin-bottom: 0.5rem; }
+        input, select { width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 1rem; background-color: #d9777f; color: white; border: none; border-radius: 6px; font-size: 1.1rem; font-weight: bold; margin-top: 1.5rem; cursor: pointer; transition: background 0.2s; }
+        button:hover { background-color: #c8656d; }
+        #result { background: #fdf5f6; padding: 1.5rem; border-radius: 8px; margin-top: 2rem; display: none; border: 1px solid #f2d7d9; }
+        .price-tag { font-size: 1.5rem; color: #2c3e50; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>מחשבון תמחור וסיכונים - Sweetie</h1>
+        <form id="calcForm">
+            <label>סוג הקינוח / מארז:</label>
+            <input type="text" id="itemType" required placeholder="לדוגמה: עוגת מוס 2 קומות / מארז פחזניות">
+            
+            <label>תנאי סביבה / אירוע:</label>
+            <select id="environment">
+                <option value="Indoor/AC">אירוע פנים (ממוזג)</option>
+                <option value="Outdoor Summer Event">אירוע חוץ (קיץ/חום/לחות)</option>
+                <option value="Delivery/Transit">משלוח ארוך ברכב</option>
+            </select>
+
+            <label>עלות חומרי גלם משוערת (₪):</label>
+            <input type="number" id="ingredientCost" required min="1">
+
+            <label>שעות הכנה במטבח:</label>
+            <input type="number" id="prepHours" required min="0" step="0.5">
+
+            <label>שעות מכירה בדוכן פופ-אפ (אם רלוונטי):</label>
+            <input type="number" id="salesHours" value="0" min="0" step="0.5">
+
+            <button type="submit" id="submitBtn">חשב הצעת מחיר וסכנות</button>
+        </form>
+
+        <div id="result">
+            <h3>תוצאות ניתוח ה-AI:</h3>
+            <p><strong>מחיר סופי מומלץ:</strong> <span class="price-tag">₪<span id="resPrice"></span></span></p>
+            <p><strong>הודעה ללקוח:</strong><br><span id="resQuote" style="white-space: pre-wrap;"></span></p>
+            <p><strong>הנחיות שינוע ואחסון (פרוטוקול):</strong><br><span id="resProtocol" style="white-space: pre-wrap;"></span></p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('calcForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.textContent = 'מנתח נתונים...';
+            btn.disabled = true;
+            
+            const payload = {
+                itemType: document.getElementById('itemType').value,
+                environment: document.getElementById('environment').value,
+                ingredientCost: document.getElementById('ingredientCost').value,
+                prepHours: document.getElementById('prepHours').value,
+                salesHours: document.getElementById('salesHours').value,
+                hourlyRate: 80
+            };
+
+            try {
+                const response = await fetch('/.netlify/functions/calculate', {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                
+                document.getElementById('resPrice').textContent = data.financials.recommendedPrice;
+                document.getElementById('resQuote').textContent = data.proposal.client_quote;
+                document.getElementById('resProtocol').textContent = data.proposal.logistics_protocol;
+                document.getElementById('result').style.display = 'block';
+            } catch (err) {
+                alert('אירעה שגיאה בחיבור לסוכן ה-AI. ודא שהמערכת מוגדרת כראוי.');
+            } finally {
+                btn.textContent = 'חשב הצעת מחיר וסכנות';
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
