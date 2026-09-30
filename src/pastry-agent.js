@@ -14,7 +14,7 @@ export class PastryCostEngine {
                 "X-Title": "PastryCost AI"
             },
             body: JSON.stringify({
-                model: "google/gemini-2.5-flash-free",
+                model: "",
                 messages: [
                     { role: "system", content: systemPrompt },
                     { role: "user", content: userPrompt }
@@ -25,12 +25,12 @@ export class PastryCostEngine {
 
         const data = await response.json();
 
-        // 1. תפיסת שגיאות מה-API (כמו מודל לא זמין או הרשאה חסרה)
+        // 1. ׳×׳₪׳™׳¡׳× ׳©׳’׳™׳׳•׳× ׳׳”-API (׳›׳׳• ׳׳•׳“׳ ׳׳ ׳–׳׳™׳ ׳׳• ׳”׳¨׳©׳׳” ׳—׳¡׳¨׳”)
         if (data.error) {
             throw new Error(`OpenRouter API Error: ${data.error.message || JSON.stringify(data.error)}`);
         }
 
-        // 2. תפיסת מצב של פלט ריק
+        // 2. ׳×׳₪׳™׳¡׳× ׳׳¦׳‘ ׳©׳ ׳₪׳׳˜ ׳¨׳™׳§
         if (!data.choices || !data.choices[0]) {
             throw new Error(`Unexpected Response from LLM: ${JSON.stringify(data)}`);
         }
