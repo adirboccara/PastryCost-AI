@@ -25,12 +25,12 @@ export class PastryCostEngine {
 
         const data = await response.json();
 
-        // 1. ׳×׳₪׳™׳¡׳× ׳©׳’׳™׳׳•׳× ׳׳”-API (׳›׳׳• ׳׳•׳“׳ ׳׳ ׳–׳׳™׳ ׳׳• ׳”׳¨׳©׳׳” ׳—׳¡׳¨׳”)
+        // 1. ׳³ֳ—׳³ג‚×׳³ג„¢׳³ֲ¡׳³ֳ— ׳³ֲ©׳³ג€™׳³ג„¢׳³ֲ׳³ג€¢׳³ֳ— ׳³ֲ׳³ג€-API (׳³ג€÷׳³ֲ׳³ג€¢ ׳³ֲ׳³ג€¢׳³ג€׳³ֲ ׳³ֲ׳³ֲ ׳³ג€“׳³ֲ׳³ג„¢׳³ֲ ׳³ֲ׳³ג€¢ ׳³ג€׳³ֲ¨׳³ֲ©׳³ֲ׳³ג€ ׳³ג€”׳³ֲ¡׳³ֲ¨׳³ג€)
         if (data.error) {
             throw new Error(`OpenRouter API Error: ${data.error.message || JSON.stringify(data.error)}`);
         }
 
-        // 2. ׳×׳₪׳™׳¡׳× ׳׳¦׳‘ ׳©׳ ׳₪׳׳˜ ׳¨׳™׳§
+        // 2. ׳³ֳ—׳³ג‚×׳³ג„¢׳³ֲ¡׳³ֳ— ׳³ֲ׳³ֲ¦׳³ג€˜ ׳³ֲ©׳³ֲ ׳³ג‚×׳³ֲ׳³ֻ ׳³ֲ¨׳³ג„¢׳³ֲ§
         if (!data.choices || !data.choices[0]) {
             throw new Error(`Unexpected Response from LLM: ${JSON.stringify(data)}`);
         }
